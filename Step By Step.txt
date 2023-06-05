@@ -1,0 +1,157 @@
+---------------Start-02----------------
+
+001: Initial Project
+
+002: Install EF Core
+	NuGet\Install-Package Microsoft.EntityFrameworkCore.SqlServer -Version 8.0.0-preview.1.23111.4
+	NuGet\Install-Package Microsoft.EntityFrameworkCore.Tools -Version 8.0.0-preview.1.23111.4
+	NuGet\Install-Package Microsoft.EntityFrameworkCore.Design -Version 8.0.0-preview.1.23111.4
+	NuGet\Install-Package Microsoft.EntityFrameworkCore.Relational -Version 8.0.0-preview.1.23111.4
+
+003: Create Database On SQL-Server
+	DB Name: TestApiDB
+
+004: Scaffold DbContext
+	Scaffold-DbContext "Server=DESKTOP-IQ90JPA;Database=TestApiDB;Trusted_Connection=True;TrustServerCertificate=True;" Microsoft.EntityFrameworkCore.SqlServer -OutputDir Models
+
+----------------End-02-----------------
+---------------Start-03----------------
+
+005: Transfer Config DbContext To Program.cs
+
+----------------End-03-----------------
+---------------Start-04----------------
+
+006: Add CustomerController
+	Add Actions Get , Post , Put , Delete
+
+----------------End-04-----------------
+---------------Start-05----------------
+
+007: Send Data In Header To Client
+	Request.HttpContext.Response.Headers.Add("X-Count", _context.Customers.Count().ToString());
+
+008: Add Function  bool CustomerExists()
+
+009: Validation In Entity
+
+----------------End-05-----------------
+---------------Start-06----------------
+
+010: Create Design Pattern & Repository For Customer
+
+----------------End-06-----------------
+---------------Start-07----------------
+
+011: Add
+	IProductRepository
+	ISalesPersonsRepository
+	ProductController
+	SalesPersonController
+
+012: Test
+
+----------------End-07-----------------
+---------------Start-08----------------
+	
+013: Response Cashing
+	builder.Services.AddResponseCaching();
+	app.UseResponseCaching();
+	[ResponseCache(Duration = 60)] for Actions
+
+----------------End-08-----------------
+---------------Start-09----------------
+	
+014: Memory Cash
+	builder.Services.AddMemoryCache();
+
+	DI
+	private IMemoryCache _cache;
+    public CustomersRepository(IMemoryCache cache)
+    {
+        _cache = cache;
+    }
+
+	public async Task<Customer> Find(int id)
+    {
+        var casheCustomer = _cache.Get<Customer>(id);
+        if (casheCustomer != null)
+        {
+            return casheCustomer;
+        }
+        else
+        {
+            var customer = await _context.Customers.Include(c => c.Orders).SingleOrDefaultAsync(c => c.CustomerId == id);
+            var casheOption = new MemoryCacheEntryOptions()
+                .SetSlidingExpiration(TimeSpan.FromSeconds(60));
+
+            _cache.Set(customer.CustomerId, customer, casheOption);
+            return customer;
+        }
+    }
+	
+----------------End-09-----------------
+---------------Start-10----------------
+
+015: Add Project Asp.Net Core Web App
+	Add Class CustomerRepositry for Access to api
+
+----------------End-10-----------------
+---------------Start-11----------------
+
+016: Add View And Work with api
+
+----------------End-11-----------------
+---------------Start-12----------------
+
+017: JWT
+    Program.cs api
+    builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+        .AddJwtBearer(options =>
+        {
+            options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters()
+            {
+                ValidateIssuer= true,
+                ValidateAudience =false,
+                ValidateLifetime = true,
+                ValidateIssuerSigningKey = true,
+                ValidIssuer = "http://localhost:34978",
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("OurVerify"))
+            };
+        });
+
+    builder.Services.AddCors(options =>
+    {
+        options.AddPolicy("EnableCors", builder =>
+        {
+            builder.AllowAnyOrigin()
+                .AllowAnyHeader()
+                .AllowAnyMethod()
+                .Build();
+        });
+    });
+
+    app.UseCors("EnableCors");
+    app.UseAuthentication();
+
+----------------End-12-----------------
+---------------Start-13----------------
+
+018: JWT
+    Program.cs Client
+    builder.Services.AddHttpClient("TestApiClient", client =>
+    {
+        client.BaseAddress = new Uri("http://localhost:34978");
+    });
+
+    builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+        .AddCookie(options =>
+        {
+            options.LoginPath = "/Auth/Login";
+            options.LogoutPath = "/Auth/SignOut";
+            options.Cookie.Name = "Auth.Coo";
+        });
+
+    app.UseCookiePolicy();
+    app.UseAuthentication();
+

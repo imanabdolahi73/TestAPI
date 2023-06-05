@@ -1,0 +1,27 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+}
+
+@model List<Customer>
+
+<h1>
+    <a asp-action="Create" class="btn btn-success">Add New Customer</a>
+</h1>
+<table class="table table-bordered">
+    @foreach (Customer item in Model)
+    {
+        <tr>
+            <td>@item.FirstName</td>
+            <td>@item.LastName</td>
+            <td>@item.City</td>
+            <td>@item.State</td>
+            <td>@item.Phone</td>
+            <td>@item.Address</td>
+            <td>@item.Email</td>
+            <td>
+                <a href="/Home/Edit/@item.CustomerId" class="btn btn-warning">Edit</a>
+                <a href="/Home/Delete/@item.CustomerId" class="btn btn-danger">Delete</a>
+            </td>
+        </tr>
+    }
+</table>
